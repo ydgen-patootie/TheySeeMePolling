@@ -16,7 +16,7 @@ class Answer_Serializer(serializers.ModelSerializer):
     poll = serializers.SlugRelatedField(queryset=Poll.objects.all(), slug_field='id')
     question = serializers.SlugRelatedField(queryset=Question.objects.all(), slug_field='id')
     choice = serializers.SlugRelatedField(queryset=Choice.objects.all(), slug_field='id', allow_null=True)
-    answer = serializers.CharField(max_length=150, allow_null=True, required=False)
+    answer = serializers.CharField(max_length=150, allow_null=True, allow_blank=True)
 
     class Meta:
         model = Answer
@@ -25,24 +25,13 @@ class Answer_Serializer(serializers.ModelSerializer):
     def create(self, validated_data):
         return Answer.objects.create(**validated_data)
 
-    def update(self, instance, validated_data):
-        for key, value in validated_data.items():
-            setattr(instance, key, value)
-        instance.save()
-        return instance
-
     def validate(self, attrs):
-        qtype = Question.objects.get(id=attrs['question'].id).qtype
         try:
-            if qtype == "TA" or question_type == "PO":
-                obj = Answer.objects.get(question=attrs['question'].id, poll=attrs['poll'], user_id=attrs['user_id'])
-            elif question_type == "PA":
-                obj = Answer.objects.get(question=attrs['question'].id, poll=attrs['poll'], user_id=attrs['user_id'],
-                                         choice=attrs['choice'])
+            obj = Answer.objects.get(user_id=attrs['user_id'],poll=attrs['poll'].id, question=attrs['question'].id, choice=attrs['choice'], answer=attrs['answer'])
         except Answer.DoesNotExist:
             return attrs
         else:
-            raise serializers.ValidationError('You already responded')
+            raise serializers.ValidationError('Answer to this question with this parameters exists')        
 
 
 class Choice_Serializer(serializers.Serializer):
